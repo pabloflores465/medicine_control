@@ -121,7 +121,7 @@ router.put("/:id", async (req: AuthRequest, res: Response): Promise<void> => {
   }
 });
 
-// Mark dose as taken
+// Mark dose as taken and recalculate future doses
 router.post(
   "/:id/take",
   async (req: AuthRequest, res: Response): Promise<void> => {
@@ -137,19 +137,62 @@ router.post(
         return;
       }
 
+      const now = new Date();
+      let takenTime = now;
+
       if (doseIndex !== undefined && medicine.doses[doseIndex]) {
         medicine.doses[doseIndex].taken = true;
-        medicine.doses[doseIndex].takenAt = new Date();
+        medicine.doses[doseIndex].takenAt = now;
+        takenTime = now;
       } else {
         // Find the next pending dose and mark it as taken
         const pendingDose = medicine.doses.find(
-          (d) => !d.taken && new Date(d.scheduledTime) <= new Date()
+          (d) => !d.taken && new Date(d.scheduledTime) <= now
         );
         if (pendingDose) {
           pendingDose.taken = true;
-          pendingDose.takenAt = new Date();
+          pendingDose.takenAt = now;
+          takenTime = now;
+        } else {
+          // If no pending dose, mark the next future dose as taken
+          const nextDose = medicine.doses.find(
+            (d) => !d.taken && new Date(d.scheduledTime) > now
+          );
+          if (nextDose) {
+            nextDose.taken = true;
+            nextDose.takenAt = now;
+            takenTime = now;
+          }
         }
       }
+
+      // Recalculate future doses based on when the dose was taken
+      // Remove all future untaken doses
+      medicine.doses = medicine.doses.filter(
+        (d) => d.taken || new Date(d.scheduledTime) <= now
+      );
+
+      // Generate new doses starting from takenTime + frequency
+      const frequencyMs = medicine.frequency * 60 * 60 * 1000;
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30);
+
+      let nextDoseTime = new Date(takenTime.getTime() + frequencyMs);
+
+      while (nextDoseTime <= endDate) {
+        medicine.doses.push({
+          scheduledTime: new Date(nextDoseTime),
+          taken: false,
+        });
+        nextDoseTime = new Date(nextDoseTime.getTime() + frequencyMs);
+      }
+
+      // Sort doses by scheduled time
+      medicine.doses.sort(
+        (a, b) =>
+          new Date(a.scheduledTime).getTime() -
+          new Date(b.scheduledTime).getTime()
+      );
 
       await medicine.save();
       res.json(medicine);

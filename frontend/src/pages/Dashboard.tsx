@@ -10,6 +10,8 @@ import {
   Trash2,
 } from "lucide-react";
 
+// formatDate is kept for potential future use
+
 interface Medicine {
   _id: string;
   name: string;
@@ -122,22 +124,13 @@ export default function Dashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Mis Medicamentos
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Control y seguimiento de tus medicinas
-          </p>
-        </div>
-        <Link
-          to="/add-medicine"
-          className="btn-primary flex items-center justify-center gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Agregar Medicamento</span>
-        </Link>
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Mis Medicamentos
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Control y seguimiento de tus medicinas
+        </p>
       </div>
 
       {/* Error Message */}
