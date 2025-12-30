@@ -126,8 +126,6 @@ router.post(
   "/:id/take",
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const { doseIndex } = req.body;
-
       const medicine = await Medicine.findOne({
         _id: req.params.id,
         userId: req.userId,
@@ -138,46 +136,41 @@ router.post(
       }
 
       const now = new Date();
-      let takenTime = now;
 
-      if (doseIndex !== undefined && medicine.doses[doseIndex]) {
-        medicine.doses[doseIndex].taken = true;
-        medicine.doses[doseIndex].takenAt = now;
-        takenTime = now;
+      // Mark ALL pending/past doses as taken (not just one)
+      const pendingDoses = medicine.doses.filter(
+        (d) => !d.taken && new Date(d.scheduledTime) <= now
+      );
+
+      if (pendingDoses.length > 0) {
+        // Mark all pending doses as taken
+        pendingDoses.forEach((dose) => {
+          dose.taken = true;
+          dose.takenAt = now;
+        });
       } else {
-        // Find the next pending dose and mark it as taken
-        const pendingDose = medicine.doses.find(
-          (d) => !d.taken && new Date(d.scheduledTime) <= now
+        // If no pending dose, mark the next future dose as taken
+        const nextDose = medicine.doses.find(
+          (d) => !d.taken && new Date(d.scheduledTime) > now
         );
-        if (pendingDose) {
-          pendingDose.taken = true;
-          pendingDose.takenAt = now;
-          takenTime = now;
-        } else {
-          // If no pending dose, mark the next future dose as taken
-          const nextDose = medicine.doses.find(
-            (d) => !d.taken && new Date(d.scheduledTime) > now
-          );
-          if (nextDose) {
-            nextDose.taken = true;
-            nextDose.takenAt = now;
-            takenTime = now;
-          }
+        if (nextDose) {
+          nextDose.taken = true;
+          nextDose.takenAt = now;
         }
       }
 
-      // Recalculate future doses based on when the dose was taken
+      // Recalculate future doses based on current time
       // Remove all future untaken doses
       medicine.doses = medicine.doses.filter(
         (d) => d.taken || new Date(d.scheduledTime) <= now
       );
 
-      // Generate new doses starting from takenTime + frequency
+      // Generate new doses starting from now + frequency
       const frequencyMs = medicine.frequency * 60 * 60 * 1000;
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 30);
 
-      let nextDoseTime = new Date(takenTime.getTime() + frequencyMs);
+      let nextDoseTime = new Date(now.getTime() + frequencyMs);
 
       while (nextDoseTime <= endDate) {
         medicine.doses.push({

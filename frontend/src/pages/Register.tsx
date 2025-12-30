@@ -67,13 +67,13 @@ export default function Register() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Nombre Completo
             </label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="input-field pl-12"
+                className="input-field flex-1"
                 placeholder="Tu nombre"
                 required
               />
@@ -84,13 +84,13 @@ export default function Register() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Correo Electrónico
             </label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-gray-400 flex-shrink-0" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-field pl-12"
+                className="input-field flex-1"
                 placeholder="tu@email.com"
                 required
               />
@@ -101,27 +101,29 @@ export default function Register() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Contraseña
             </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field pl-12 pr-12"
-                placeholder="••••••••"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
+            <div className="flex items-center gap-3">
+              <Lock className="h-5 w-5 text-gray-400 flex-shrink-0" />
+              <div className="relative flex-1">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field pr-10"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -129,13 +131,13 @@ export default function Register() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Confirmar Contraseña
             </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="flex items-center gap-3">
+              <Lock className="h-5 w-5 text-gray-400 flex-shrink-0" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="input-field pl-12"
+                className="input-field flex-1"
                 placeholder="••••••••"
                 required
               />
