@@ -10,8 +10,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-// formatDate is kept for potential future use
-
 interface Medicine {
   _id: string;
   name: string;
@@ -32,6 +30,8 @@ export default function Dashboard() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [takingMedicine, setTakingMedicine] = useState<string | null>(null);
+  const [deletingMedicine, setDeletingMedicine] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMedicines();
@@ -64,21 +64,27 @@ export default function Dashboard() {
   };
 
   const markAsTaken = async (medicineId: string) => {
+    setTakingMedicine(medicineId);
     try {
       await api.post(`/medicines/${medicineId}/take`);
-      fetchMedicines();
+      await fetchMedicines();
     } catch (err) {
       setError("Error al marcar como tomado");
+    } finally {
+      setTakingMedicine(null);
     }
   };
 
   const deleteMedicine = async (medicineId: string) => {
     if (!confirm("¿Estás seguro de eliminar este medicamento?")) return;
+    setDeletingMedicine(medicineId);
     try {
       await api.delete(`/medicines/${medicineId}`);
-      fetchMedicines();
+      await fetchMedicines();
     } catch (err) {
       setError("Error al eliminar medicamento");
+    } finally {
+      setDeletingMedicine(null);
     }
   };
 
@@ -86,14 +92,6 @@ export default function Dashboard() {
     return date.toLocaleTimeString("es-MX", {
       hour: "2-digit",
       minute: "2-digit",
-    });
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("es-MX", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
     });
   };
 
@@ -234,17 +232,32 @@ export default function Dashboard() {
                 {(hasPending || nextDose) && (
                   <button
                     onClick={() => markAsTaken(medicine._id)}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    disabled={takingMedicine === medicine._id}
+                    className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <CheckCircle className="h-5 w-5" />
-                    <span>Tomar</span>
+                    {takingMedicine === medicine._id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Tomando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-5 w-5" />
+                        <span>Tomar</span>
+                      </>
+                    )}
                   </button>
                 )}
                 <button
                   onClick={() => deleteMedicine(medicine._id)}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  disabled={deletingMedicine === medicine._id}
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Trash2 className="h-5 w-5" />
+                  {deletingMedicine === medicine._id ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
+                  ) : (
+                    <Trash2 className="h-5 w-5" />
+                  )}
                 </button>
               </div>
             </div>
