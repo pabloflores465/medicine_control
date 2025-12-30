@@ -40,8 +40,15 @@ router.get("/:id", async (req: AuthRequest, res: Response): Promise<void> => {
 // Create medicine
 router.post("/", async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, description, image, imageContentType, frequency, startTime } =
-      req.body;
+    const {
+      name,
+      description,
+      image,
+      imageContentType,
+      frequency,
+      startTime,
+      durationDays,
+    } = req.body;
 
     if (!name || !frequency || !startTime) {
       res
@@ -50,6 +57,8 @@ router.post("/", async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
+    const duration = durationDays || 30;
+
     const medicine = new Medicine({
       userId: req.userId,
       name,
@@ -57,14 +66,15 @@ router.post("/", async (req: AuthRequest, res: Response): Promise<void> => {
       image,
       imageContentType,
       frequency,
+      durationDays: duration,
       startTime: new Date(startTime),
       doses: [],
     });
 
-    // Generate initial doses for the next 30 days
+    // Generate initial doses for the specified duration
     const startDate = new Date(startTime);
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + duration);
 
     let currentDose = new Date(startDate);
     const frequencyMs = frequency * 60 * 60 * 1000;
@@ -93,8 +103,10 @@ router.put("/:id", async (req: AuthRequest, res: Response): Promise<void> => {
       image,
       imageContentType,
       frequency,
+      durationDays,
       startTime,
       active,
+      regenerateDoses,
     } = req.body;
 
     const medicine = await Medicine.findOne({
@@ -108,11 +120,43 @@ router.put("/:id", async (req: AuthRequest, res: Response): Promise<void> => {
 
     if (name) medicine.name = name;
     if (description !== undefined) medicine.description = description;
-    if (image) medicine.image = image;
-    if (imageContentType) medicine.imageContentType = imageContentType;
+    if (image !== undefined) medicine.image = image;
+    if (imageContentType !== undefined)
+      medicine.imageContentType = imageContentType;
     if (frequency) medicine.frequency = frequency;
+    if (durationDays) medicine.durationDays = durationDays;
     if (startTime) medicine.startTime = new Date(startTime);
     if (active !== undefined) medicine.active = active;
+
+    // Regenerate doses if requested or if frequency/startTime/durationDays changed
+    if (regenerateDoses) {
+      // Keep only taken doses
+      const takenDoses = medicine.doses.filter((d) => d.taken);
+
+      // Generate new doses from now
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + (medicine.durationDays || 30));
+
+      const frequencyMs = medicine.frequency * 60 * 60 * 1000;
+      let nextDoseTime = new Date(now.getTime() + frequencyMs);
+
+      const newDoses: { scheduledTime: Date; taken: boolean }[] = [];
+      while (nextDoseTime <= endDate) {
+        newDoses.push({
+          scheduledTime: new Date(nextDoseTime),
+          taken: false,
+        });
+        nextDoseTime = new Date(nextDoseTime.getTime() + frequencyMs);
+      }
+
+      medicine.doses = [...takenDoses, ...newDoses];
+      medicine.doses.sort(
+        (a, b) =>
+          new Date(a.scheduledTime).getTime() -
+          new Date(b.scheduledTime).getTime()
+      );
+    }
 
     await medicine.save();
     res.json(medicine);

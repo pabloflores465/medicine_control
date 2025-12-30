@@ -1,26 +1,60 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
-import { Pill, Upload, X, Clock, Calendar } from "lucide-react";
+import { Pill, Upload, X, Clock, Calendar, Save } from "lucide-react";
 
-export default function AddMedicine() {
+interface Medicine {
+  _id: string;
+  name: string;
+  description?: string;
+  image?: string;
+  imageContentType?: string;
+  frequency: number;
+  durationDays: number;
+  startTime: string;
+}
+
+export default function EditMedicine() {
+  const { id } = useParams<{ id: string }>();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [frequency, setFrequency] = useState(8);
-  const [startDate, setStartDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [startTime, setStartTime] = useState(
-    new Date().toTimeString().slice(0, 5)
-  );
   const [durationDays, setDurationDays] = useState(7);
   const [image, setImage] = useState<string | null>(null);
   const [imageContentType, setImageContentType] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
+  const [regenerateDoses, setRegenerateDoses] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchMedicine();
+  }, [id]);
+
+  const fetchMedicine = async () => {
+    try {
+      const response = await api.get<Medicine>(`/medicines/${id}`);
+      const medicine = response.data;
+      setName(medicine.name);
+      setDescription(medicine.description || "");
+      setFrequency(medicine.frequency);
+      setDurationDays(medicine.durationDays || 30);
+      if (medicine.image) {
+        setImage(medicine.image);
+        setImageContentType(medicine.imageContentType || "");
+        setImagePreview(
+          `data:${medicine.imageContentType};base64,${medicine.image}`
+        );
+      }
+    } catch (err: any) {
+      setError("Error al cargar el medicamento");
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,21 +90,21 @@ export default function AddMedicine() {
     setLoading(true);
 
     try {
-      const startDateTime = new Date(`${startDate}T${startTime}`);
-
-      await api.post("/medicines", {
+      await api.put(`/medicines/${id}`, {
         name,
         description,
         image,
         imageContentType,
         frequency,
         durationDays,
-        startTime: startDateTime.toISOString(),
+        regenerateDoses,
       });
 
       navigate("/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Error al agregar medicamento");
+      setError(
+        err.response?.data?.message || "Error al actualizar medicamento"
+      );
     } finally {
       setLoading(false);
     }
@@ -84,6 +118,14 @@ export default function AddMedicine() {
     { value: 24, label: "Una vez al día" },
   ];
 
+  if (loadingData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
@@ -94,11 +136,9 @@ export default function AddMedicine() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Agregar Medicamento
+              Editar Medicamento
             </h1>
-            <p className="text-gray-500">
-              Registra un nuevo medicamento para llevar su control
-            </p>
+            <p className="text-gray-500">Modifica los datos del medicamento</p>
           </div>
         </div>
 
@@ -265,66 +305,26 @@ export default function AddMedicine() {
             </div>
           </div>
 
-          {/* Start Date & Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Fecha de inicio *</span>
-                </div>
-              </label>
+          {/* Regenerate Doses Option */}
+          <div className="bg-orange-50 rounded-xl p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
               <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="input-field"
-                required
+                type="checkbox"
+                checked={regenerateDoses}
+                onChange={(e) => setRegenerateDoses(e.target.checked)}
+                className="mt-1 h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Hora de primera toma *</span>
-                </div>
-              </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="input-field"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Next Dose Preview */}
-          <div className="bg-primary-50 rounded-xl p-4">
-            <h3 className="font-medium text-primary-900 mb-2">
-              Próximas tomas calculadas:
-            </h3>
-            <div className="text-sm text-primary-700 space-y-1">
-              {[0, 1, 2].map((i) => {
-                const nextDose = new Date(`${startDate}T${startTime}`);
-                nextDose.setHours(nextDose.getHours() + frequency * i);
-                return (
-                  <p key={i}>
-                    {i === 0 ? "1ª" : i === 1 ? "2ª" : "3ª"} toma:{" "}
-                    {nextDose.toLocaleDateString("es-MX", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                    })}{" "}
-                    a las{" "}
-                    {nextDose.toLocaleTimeString("es-MX", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                );
-              })}
-            </div>
+              <div>
+                <span className="font-medium text-orange-900">
+                  Regenerar dosis futuras
+                </span>
+                <p className="text-sm text-orange-700 mt-1">
+                  Marca esta opción si cambiaste la frecuencia o duración y
+                  quieres recalcular las dosis pendientes. Las dosis ya tomadas
+                  se mantendrán.
+                </p>
+              </div>
+            </label>
           </div>
 
           {/* Submit Buttons */}
@@ -332,15 +332,18 @@ export default function AddMedicine() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary flex-1 py-3 disabled:opacity-50"
+              className="btn-primary flex-1 py-3 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
+                <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Guardando...
-                </span>
+                  <span>Guardando...</span>
+                </>
               ) : (
-                "Guardar Medicamento"
+                <>
+                  <Save className="h-5 w-5" />
+                  <span>Guardar Cambios</span>
+                </>
               )}
             </button>
             <button

@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Plus,
   Trash2,
+  Edit2,
 } from "lucide-react";
 
 interface Medicine {
@@ -248,6 +249,12 @@ export default function Dashboard() {
                     )}
                   </button>
                 )}
+                <Link
+                  to={`/edit-medicine/${medicine._id}`}
+                  className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                >
+                  <Edit2 className="h-5 w-5" />
+                </Link>
                 <button
                   onClick={() => deleteMedicine(medicine._id)}
                   disabled={deletingMedicine === medicine._id}

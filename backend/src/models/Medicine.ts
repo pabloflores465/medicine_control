@@ -13,6 +13,7 @@ export interface IMedicine extends Document {
   image?: string; // Base64 encoded image (blob)
   imageContentType?: string;
   frequency: number; // Hours between doses
+  durationDays: number; // Number of days to take the medicine
   startTime: Date; // When the first dose was/should be taken
   doses: IDose[];
   active: boolean;
@@ -59,6 +60,12 @@ const medicineSchema = new Schema<IMedicine>({
     type: Number,
     required: true,
     min: 1, // Minimum 1 hour
+  },
+  durationDays: {
+    type: Number,
+    required: true,
+    default: 30,
+    min: 1,
   },
   startTime: {
     type: Date,

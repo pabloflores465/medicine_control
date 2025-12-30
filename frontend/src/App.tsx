@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AddMedicine from "./pages/AddMedicine";
+import EditMedicine from "./pages/EditMedicine";
 import Calendar from "./pages/Calendar";
 import Layout from "./components/Layout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -69,6 +70,7 @@ function App() {
             <Route index element={<Navigate to="/dashboard" />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="add-medicine" element={<AddMedicine />} />
+            <Route path="edit-medicine/:id" element={<EditMedicine />} />
             <Route path="calendar" element={<Calendar />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" />} />
