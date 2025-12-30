@@ -7,10 +7,7 @@ import Calendar from "./pages/Calendar";
 import Layout from "./components/Layout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-// Detect if we're being accessed via /medicine path (Tailscale Funnel or production)
-const routerBasename = window.location.pathname.startsWith("/medicine")
-  ? "/medicine"
-  : "";
+const routerBasename = "";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();

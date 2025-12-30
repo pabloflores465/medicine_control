@@ -1,12 +1,7 @@
 import axios from "axios";
 
-// Detect base path from current URL (works for Funnel access at /medicine and local dev)
-const basePath = window.location.pathname.startsWith("/medicine")
-  ? "/medicine"
-  : "";
-
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || `${basePath}/api`,
+  baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
   headers: {
     "Content-Type": "application/json",
   },
